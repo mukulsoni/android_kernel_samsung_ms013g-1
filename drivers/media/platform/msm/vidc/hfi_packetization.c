@@ -360,17 +360,8 @@ static int get_hfi_extradata_index(enum hal_extradata_id index)
 	case HAL_EXTRADATA_MPEG2_SEQDISP:
 		ret = HFI_PROPERTY_PARAM_VDEC_MPEG2_SEQDISP_EXTRADATA;
 		break;
-	case HAL_EXTRADATA_FRAME_QP:
-		ret = HFI_PROPERTY_PARAM_VDEC_FRAME_QP_EXTRADATA;
-		break;
-	case HAL_EXTRADATA_FRAME_BITS_INFO:
-		ret = HFI_PROPERTY_PARAM_VDEC_FRAME_BITS_INFO_EXTRADATA;
-		break;
 	case HAL_EXTRADATA_LTR_INFO:
 		ret = HFI_PROPERTY_PARAM_VENC_LTR_INFO;
-		break;
-	case HAL_EXTRADATA_METADATA_MBI:
-		ret = HFI_PROPERTY_PARAM_VENC_MBI_DUMPING;
 		break;
 	default:
 		dprintk(VIDC_WARN, "Extradata index not found: %d\n", index);
@@ -1437,6 +1428,43 @@ int create_pkt_cmd_session_set_property(
 		hfi = (struct hfi_enable *) &pkt->rg_property_data[1];
 		hfi->enable = ((struct hfi_enable *) pdata)->enable;
 		pkt->size += sizeof(u32) + sizeof(struct hfi_enable);
+		break;
+	}
+	case HAL_PARAM_VENC_LTRMODE:
+	{
+		struct hfi_ltrmode *hfi;
+		struct hal_ltrmode *hal = pdata;
+		pkt->rg_property_data[0] =
+			HFI_PROPERTY_PARAM_VENC_H264_LTRMODE;
+		hfi = (struct hfi_ltrmode *) &pkt->rg_property_data[1];
+		hfi->ltrmode = get_hfi_ltr_mode(hal->ltrmode);
+		hfi->ltrcount = hal->ltrcount;
+		hfi->trustmode = hal->trustmode;
+		pkt->size += sizeof(u32) + sizeof(struct hfi_ltrmode);
+		break;
+	}
+	case HAL_CONFIG_VENC_USELTRFRAME:
+	{
+		struct hfi_ltruse *hfi;
+		struct hal_ltruse *hal = pdata;
+		pkt->rg_property_data[0] =
+			HFI_PROPERTY_CONFIG_VENC_H264_USELTRFRAME;
+		hfi = (struct hfi_ltruse *) &pkt->rg_property_data[1];
+		hfi->frames = hal->frames;
+		hfi->refltr = hal->refltr;
+		hfi->useconstrnt = hal->useconstrnt;
+		pkt->size += sizeof(u32) + sizeof(struct hfi_ltruse);
+		break;
+	}
+	case HAL_CONFIG_VENC_MARKLTRFRAME:
+	{
+		struct hfi_ltrmark *hfi;
+		struct hal_ltrmark *hal = pdata;
+		pkt->rg_property_data[0] =
+			HFI_PROPERTY_CONFIG_VENC_H264_MARKLTRFRAME;
+		hfi = (struct hfi_ltrmark *) &pkt->rg_property_data[1];
+		hfi->markframe = hal->markframe;
+		pkt->size += sizeof(u32) * 2;
 		break;
 	}
 	case HAL_PARAM_VPE_COLOR_SPACE_CONVERSION:
