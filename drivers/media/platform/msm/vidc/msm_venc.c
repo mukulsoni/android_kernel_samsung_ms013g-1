@@ -136,6 +136,7 @@ static const char *const mpeg_video_vidc_extradata[] = {
 	"Extradata input crop",
 	"Extradata digital zoom",
 	"Extradata aspect ratio",
+	"Extradata LTR",
 	"Extradata macroblock metadata",
 };
 
@@ -695,7 +696,7 @@ static struct msm_vidc_ctrl msm_venc_ctrls[] = {
 		.name = "Extradata Type",
 		.type = V4L2_CTRL_TYPE_MENU,
 		.minimum = V4L2_MPEG_VIDC_EXTRADATA_NONE,
-		.maximum = V4L2_MPEG_VIDC_EXTRADATA_METADATA_MBI,
+		.maximum = V4L2_MPEG_VIDC_EXTRADATA_LTR,
 		.default_value = V4L2_MPEG_VIDC_EXTRADATA_NONE,
 		.menu_skip_mask = ~(
 			(1 << V4L2_MPEG_VIDC_EXTRADATA_NONE) |
@@ -716,8 +717,7 @@ static struct msm_vidc_ctrl msm_venc_ctrls[] = {
 			(1 << V4L2_MPEG_VIDC_INDEX_EXTRADATA_INPUT_CROP) |
 			(1 << V4L2_MPEG_VIDC_INDEX_EXTRADATA_DIGITAL_ZOOM) |
 			(1 << V4L2_MPEG_VIDC_INDEX_EXTRADATA_ASPECT_RATIO) |
-			(1 << V4L2_MPEG_VIDC_EXTRADATA_LTR) |
-			(1 << V4L2_MPEG_VIDC_EXTRADATA_METADATA_MBI)
+			(1 << V4L2_MPEG_VIDC_EXTRADATA_LTR)
 			),
 		.qmenu = mpeg_video_vidc_extradata,
 		.step = 0,
@@ -926,7 +926,6 @@ static int msm_venc_queue_setup(struct vb2_queue *q,
 			*num_buffers = buff_req->buffer_count_actual =
 			max(*num_buffers, buff_req->buffer_count_actual);
 		}
-
 		if (*num_buffers < MIN_NUM_CAPTURE_BUFFERS ||
 				*num_buffers > VIDEO_MAX_FRAME) {
 			int temp = *num_buffers;
@@ -938,21 +937,19 @@ static int msm_venc_queue_setup(struct vb2_queue *q,
 				"Changing buffer count on CAPTURE_MPLANE from %d to %d for best effort encoding\n",
 				temp, *num_buffers);
 		}
-
 		ctrl = v4l2_ctrl_find(&inst->ctrl_handler,
 				V4L2_CID_MPEG_VIDC_VIDEO_EXTRADATA);
 		if (ctrl)
 			extradata = v4l2_ctrl_g_ctrl(ctrl);
-		if (extradata != V4L2_MPEG_VIDC_EXTRADATA_NONE)
+		if ((extradata == V4L2_MPEG_VIDC_EXTRADATA_MULTISLICE_INFO) ||
+			(extradata == V4L2_MPEG_VIDC_EXTRADATA_LTR))
 			*num_planes = *num_planes + 1;
 		inst->fmts[CAPTURE_PORT]->num_planes = *num_planes;
-
 		for (i = 0; i < *num_planes; i++) {
 			sizes[i] = inst->fmts[CAPTURE_PORT]->get_frame_size(
 					i, inst->prop.height[CAPTURE_PORT],
 					inst->prop.width[CAPTURE_PORT]);
 		}
-
 		property_id = HAL_PARAM_BUFFER_COUNT_ACTUAL;
 		new_buf_count.buffer_type = HAL_BUFFER_OUTPUT;
 		new_buf_count.buffer_count_actual = *num_buffers;
